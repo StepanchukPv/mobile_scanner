@@ -26,10 +26,8 @@ class MobileScannerController {
     this.torchEnabled = false,
     this.formats,
     this.returnImage = false,
-    @Deprecated(
-      'Instead, use the result of calling `start()` to determine if permissions were granted.',
-    )
     this.onPermissionSet,
+    this.onInitialized,
     this.autoStart = true,
     this.cameraResolution,
     this.useNewCameraSelector = false,
@@ -101,10 +99,8 @@ class MobileScannerController {
   static const EventChannel _eventChannel =
       EventChannel('dev.steenbakker.mobile_scanner/scanner/event');
 
-  @Deprecated(
-    'Instead, use the result of calling `start()` to determine if permissions were granted.',
-  )
-  Function(bool permissionGranted)? onPermissionSet;
+  final Function(bool permissionGranted)? onPermissionSet;
+  final Function()? onInitialized;
 
   /// Listen to events from the platform specific code
   StreamSubscription? events;
@@ -233,6 +229,8 @@ class MobileScannerController {
 
             if (!granted) {
               isStarting = false;
+              onPermissionSet?.call(granted);
+
               throw const MobileScannerException(
                 errorCode: MobileScannerErrorCode.permissionDenied,
               );
@@ -252,6 +250,8 @@ class MobileScannerController {
         case MobileScannerState.authorized:
           break;
       }
+
+      onPermissionSet?.call(true);
     }
 
     // Start the camera with arguments
@@ -319,6 +319,9 @@ class MobileScannerController {
     }
 
     isStarting = false;
+
+    onInitialized?.call();
+
     return startArguments.value = MobileScannerArguments(
       numberOfCameras: startResult['numberOfCameras'] as int?,
       size: size,
